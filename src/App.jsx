@@ -340,11 +340,34 @@ function AuthPage({ onLogin, addToast }) {
 
 // ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 function Sidebar({ page, setPage, user, onLogout, collapsed, setCollapsed }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const nav = [
     { id: "dashboard", icon: BarChart2, label: "Dashboard" },
     { id: "review", icon: Code2, label: "Code Review" },
     { id: "history", icon: History, label: "Review History" },
   ];
+
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#1A2B34] border-t border-slate-700/50 flex justify-around p-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
+        {nav.map(({ id, icon: Icon, label }) => (
+          <button key={id} onClick={() => setPage(id)}
+            className={`flex flex-col items-center p-2 rounded-xl text-xs transition-colors ${page === id ? "text-cyan-400" : "text-[#E2E8F0]/50 hover:text-[#E2E8F0]/80"}`}>
+            <Icon size={20} className="mb-1" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <motion.aside animate={{ width: collapsed ? 64 : 224 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="flex-shrink-0 bg-[#1A2B34]/90 border-r border-slate-700/50 flex flex-col h-screen sticky top-0 backdrop-blur-xl overflow-hidden">
@@ -419,7 +442,7 @@ function Dashboard({ reviews, setPage }) {
         <p className="text-[#E2E8F0]/70 text-sm mt-1">Overview of your code quality metrics</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} whileHover={{ scale: 1.03, y: -4 }}
             className={`bg-gradient-to-br ${colorMap[s.color]} border rounded-2xl p-5 backdrop-blur-sm cursor-pointer transition-all duration-300 hover:shadow-[0_0_25px_rgba(226,232,240,0.15)] hover:border-[#E2E8F0]/40 hover:bg-[#1A2B34]/80`}>
@@ -587,15 +610,15 @@ function ReviewResults({ result, fileName, onExport }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-[#1A2B34]/60 border border-slate-700/40 rounded-2xl p-5 backdrop-blur-sm flex flex-wrap items-center gap-6">
+      <div className="bg-[#1A2B34]/60 border border-slate-700/40 rounded-2xl p-5 backdrop-blur-sm flex flex-col md:flex-row items-center gap-6">
         <ScoreRing score={result.score || 0} size={120} />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col items-center md:items-start text-center md:text-left">
           <div className="flex items-center gap-3 mb-2">
             <h2 className="text-lg font-black text-[#E2E8F0]">{fileName || "Code Review"}</h2>
             <span className="text-xs bg-slate-800 text-[#E2E8F0]/70 px-2 py-0.5 rounded-full border border-slate-700">{result.language}</span>
           </div>
           <p className="text-[#E2E8F0]/90 text-sm leading-relaxed mb-3">{result.summary}</p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap justify-center md:justify-start gap-3">
             {[
               { label: "Critical", count: result.criticalIssues?.length || 0, color: "text-red-400" },
               { label: "Security", count: result.securityIssues?.length || 0, color: "text-amber-400" },
@@ -624,7 +647,7 @@ function ReviewResults({ result, fileName, onExport }) {
 
       {/* Metrics */}
       {metricData.length > 0 && (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {metricData.map(m => (
             <div key={m.name} className="bg-[#1A2B34]/60 border border-slate-700/40 rounded-xl p-3 text-center">
               <div className={`text-xl font-black ${m.value >= 70 ? "text-emerald-400" : m.value >= 50 ? "text-amber-400" : "text-red-400"}`}>{m.value}</div>
@@ -789,33 +812,37 @@ function CodeReviewPage({ onReviewComplete, addToast }) {
 
       <div className="bg-[#1A2B34]/60 border border-slate-700/40 rounded-2xl overflow-hidden backdrop-blur-sm">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 p-4 border-b border-slate-700/40">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-4 border-b border-slate-700/40">
           <div className="flex bg-slate-800 rounded-xl p-1 gap-1">
             {["paste", "upload"].map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${tab === t ? "bg-slate-700 text-[#E2E8F0]" : "text-[#E2E8F0]/70 hover:text-[#E2E8F0]"}`}>
-                {t === "paste" ? <><Code2 size={12} className="inline mr-1" />Paste Code</> : <><Upload size={12} className="inline mr-1" />Upload File</>}
+                className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize flex items-center justify-center ${tab === t ? "bg-slate-700 text-[#E2E8F0]" : "text-[#E2E8F0]/70 hover:text-[#E2E8F0]"}`}>
+                {t === "paste" ? <><Code2 size={12} className="mr-1" />Paste Code</> : <><Upload size={12} className="mr-1" />Upload File</>}
               </button>
             ))}
           </div>
 
-          <select value={language} onChange={e => setLanguage(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-[#E2E8F0]/90 focus:outline-none focus:border-cyan-500/50 cursor-pointer">
-            {LANGS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
-          </select>
+          <div className="flex gap-2">
+            <select value={language} onChange={e => setLanguage(e.target.value)}
+              className="flex-1 md:flex-none bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-[#E2E8F0]/90 focus:outline-none focus:border-cyan-500/50 cursor-pointer">
+              {LANGS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
+            </select>
 
-          <input value={fileName} onChange={e => setFileName(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-[#E2E8F0]/90 focus:outline-none focus:border-cyan-500/50 w-40" placeholder="filename.js" />
+            <input value={fileName} onChange={e => setFileName(e.target.value)}
+              className="flex-1 md:flex-none bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-[#E2E8F0]/90 focus:outline-none focus:border-cyan-500/50 min-w-0" placeholder="filename.js" />
+          </div>
 
-          <button onClick={() => { setCode(SAMPLE_CODE[language] || SAMPLE_CODE.javascript); }} className="text-xs text-[#E2E8F0]/70 hover:text-[#E2E8F0] px-3 py-1.5 bg-slate-800 rounded-xl border border-slate-700 transition-colors">
-            Load Sample
-          </button>
+          <div className="flex gap-2 md:ml-auto">
+            <button onClick={() => { setCode(SAMPLE_CODE[language] || SAMPLE_CODE.javascript); }} className="flex-1 md:flex-none text-xs text-[#E2E8F0]/70 hover:text-[#E2E8F0] px-3 py-1.5 bg-slate-800 rounded-xl border border-slate-700 transition-colors">
+              Load Sample
+            </button>
 
-          <button onClick={handleReview} disabled={reviewing}
-            className="ml-auto flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[#E2E8F0] to-violet-600 text-[#E2E8F0] text-sm font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-cyan-500/20">
-            {reviewing ? <RefreshCw size={15} className="animate-spin" /> : <Zap size={15} />}
-            {reviewing ? "Analyzing..." : "Run AI Review"}
-          </button>
+            <button onClick={handleReview} disabled={reviewing}
+              className="flex-[2] md:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-gradient-to-r from-[#E2E8F0] to-violet-600 text-[#E2E8F0] text-sm font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-cyan-500/20">
+              {reviewing ? <RefreshCw size={15} className="animate-spin" /> : <Zap size={15} />}
+              {reviewing ? "Analyzing..." : "Review"}
+            </button>
+          </div>
         </div>
 
         {/* Upload zone */}
@@ -1185,7 +1212,7 @@ function MagicRings({
 
 function AnimatedBackground() {
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#1A2B34]">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#1A2B34] hidden md:block">
       <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(226,232,240,0.03) 1px, transparent 0)", backgroundSize: "32px 32px", zIndex: 1 }} />
       <div className="absolute inset-0 z-0">
         <MagicRings
@@ -1251,12 +1278,25 @@ export default function App() {
   if (!user) return <><AuthPage onLogin={handleSetUser} addToast={addToast} /><Toast toasts={toasts} remove={removeToast} /></>;
 
   return (
-    <div className="min-h-screen bg-transparent flex">
+    <div className="min-h-screen bg-[#0f172a] md:bg-transparent flex flex-col md:flex-row">
       <AnimatedBackground />
+
+      {/* Mobile Top Bar */}
+      <div className="md:hidden flex items-center justify-between bg-[#1A2B34] border-b border-slate-700/50 p-4 sticky top-0 z-50 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-[#1A2B34] border border-slate-700/50 shadow-md">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+          </div>
+          <span className="text-lg font-black text-[#E2E8F0] tracking-tight">CodeGuard<span className="text-[#E2E8F0]"> AI</span></span>
+        </div>
+        <button onClick={() => { handleSetUser(null); addToast("Signed out", "info"); }} className="text-[#E2E8F0]/70 hover:text-red-400 p-2">
+          <LogOut size={18} />
+        </button>
+      </div>
 
       <Sidebar page={page} setPage={setPage} user={user} onLogout={() => { handleSetUser(null); addToast("Signed out", "info"); }} collapsed={collapsed} setCollapsed={setCollapsed} />
 
-      <main className="flex-1 overflow-y-auto relative z-10">
+      <main className="flex-1 overflow-y-auto relative z-10 pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           <motion.div key={page} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.15 }}>
             {page === "dashboard" && <Dashboard reviews={reviews} setPage={setPage} />}
